@@ -15,12 +15,13 @@
     <androidx.appcompat.widget.AppCompatTextView
         android:id="@+id/date"
         android:layout_width="wrap_content"
-        android:visibility="invisible"
+        android:visibility="visible"
         android:layout_height="wrap_content"
         android:textSize="16sp" />
 
     <androidx.appcompat.widget.AppCompatTextView
         android:id="@+id/sms_message"
+        android:textStyle="bold"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:textSize="16sp" />

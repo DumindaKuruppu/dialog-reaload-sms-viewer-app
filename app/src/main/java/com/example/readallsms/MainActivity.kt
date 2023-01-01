@@ -70,7 +70,11 @@ class MainActivity : AppCompatActivity() {
                     val dateString = cursor.getString(dateID)
                     val messageString = cursor.getString(messageID)
 
-                    if (cursor.getString(nameID).equals(eZreload)) {
+                    if (cursor.getString(nameID).equals(eZreload) && (cursor.getString(messageID)
+                            .startsWith("RELOADED")) || (cursor.getString(messageID)
+                            .startsWith("RELOAD")) || (cursor.getString(messageID)
+                            .startsWith("YOU HAVE"))
+                    ) {
                         println(cursor.getString(messageID))
                         smsList.add(
                             SmsData(
@@ -114,14 +118,33 @@ class MainActivity : AppCompatActivity() {
             val amountRegex = "RS (\\d+\\.\\d+)"
             val amount = Pattern.compile(amountRegex).matcher(messageID).apply { find() }.group(1)
 
-            val extractedData =
-                "Phone number: $phoneNumber, Date: $date, Reference number: $referenceNumber, Amount: $amount"
+            // Extract new balance
+            val balanceRegex = "NEW BALANCE: RS (\\d+\\.\\d+)"
+            val newBalance =
+                Pattern.compile(balanceRegex).matcher(messageID).apply { find() }.group(1)
 
+            return "$phoneNumber යන අංකයට\nරු. $amount/= ක්\n$date දිනයේදී රීලෝඩ් කරන ලදි.\nඉතිරි මුදල රු. $newBalance/=\nReference number: $referenceNumber, "
 
-            return extractedData
+        } else if (messageID.startsWith("RELOAD NOT SUCCESSFUL TO")) {
+
+            // Extract phone number
+            val phoneRegex = "TO (\\d+)"
+            val phoneNumber =
+                Pattern.compile(phoneRegex).matcher(messageID).apply { find() }.group(1)
+
+            // Extract current balance
+            val balanceRegex = "YOUR CURRENT BALANCE IS RS (\\d+\\.\\d+)"
+//            val currentBalance = Pattern.compile(balanceRegex).matcher(messageID).apply { find() }.group(1)
+//            return "මුදල් මදි නිසා $phoneNumber යන අංකයට දැමූ රීලෝඩ් එක සාර්ථක නැත.\nඉතිරි මුදල රු. $currentBalance"
+            return "මුදල් මදි නිසා $phoneNumber යන අංකයට දැමූ රීලෝඩ් එක සාර්ථක නැත."
+
+        } else if (messageID.startsWith("YOU HAVE")) {
+            return "ඔබ යෙදූ PIN අංකය වැරදියි නැවත උත්සාහ කරන්න"
         } else {
             return messageID
         }
     }
 }
+
+//RELOAD NOT SUCCESSFUL. PLEASE CONTACT YOUR RETAILER FOR ASSISTANCE. REFERENCE NO: 10762617237
 
