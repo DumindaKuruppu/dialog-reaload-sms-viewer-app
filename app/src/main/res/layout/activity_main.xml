@@ -11,7 +11,7 @@
         android:id="@+id/sms_list_view"
         android:layout_width="match_parent"
         android:layout_height="0dp"
+        tools:listitem="@layout/row_layout"
         android:layout_weight="6"/>
-
 
 </LinearLayout>

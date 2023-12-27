@@ -8,7 +8,12 @@ import android.os.Bundle
 import androidx.core.app.ActivityCompat
 import com.example.readallsms.databinding.ActivityMainBinding
 import kotlinx.android.synthetic.main.activity_main.*
+import java.io.Serializable
+import java.text.DateFormatSymbols
+import java.text.ParseException
+import java.text.SimpleDateFormat
 import java.util.Date
+import java.util.Locale
 import java.util.regex.Pattern
 
 
@@ -16,7 +21,8 @@ class MainActivity : AppCompatActivity() {
 
     private lateinit var binding: ActivityMainBinding
     private val requestReadSms: Int = 2
-    private val eZreload: String = "eZ Reload"
+    private val eZReload: String = "eZ Reload"
+    private val eZReloadTransfers: String = "eZReload"
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -68,19 +74,20 @@ class MainActivity : AppCompatActivity() {
 
                 do {
                     val dateString = cursor.getString(dateID)
-                    val messageString = cursor.getString(messageID)
+//                    val messageString = cursor.getString(messageID)
 
-                    if (cursor.getString(nameID).equals(eZreload) && (cursor.getString(messageID)
+                    if ((cursor.getString(nameID).equals(eZReload) || (cursor.getString(nameID)
+                            .equals(eZReloadTransfers))) && (cursor.getString(messageID)
                             .startsWith("RELOADED")) || (cursor.getString(messageID)
                             .startsWith("RELOAD")) || (cursor.getString(messageID)
-                            .startsWith("YOU HAVE"))
+                            .startsWith("YOU HAVE")) || (cursor.getString(messageID)).contains("has transferred")
                     ) {
                         println(cursor.getString(messageID))
                         smsList.add(
                             SmsData(
                                 cursor.getString(nameID),
-                                Date(dateString.toLong()).toString(),
-                                formatReloadSms(cursor.getString(messageID)),
+                                convertDateTimeToSinhala(Date(dateString.toLong()).toString()),
+                                formatReloadSms(cursor.getString(messageID))
                             )
                         )
                     }
@@ -96,7 +103,24 @@ class MainActivity : AppCompatActivity() {
     }
 
 
-    private fun formatReloadSms(messageID: String): String {
+    private fun convertDateTimeToSinhala(dateTimeString: String): String {
+        // Parse the input date-time string
+        val inputFormat = SimpleDateFormat("EEE MMM dd HH:mm:ss z yyyy", Locale.US)
+        val dateTime: Date
+        try {
+            dateTime = inputFormat.parse(dateTimeString)!!
+        } catch (e: ParseException) {
+            return "Invalid date-time format"
+        }
+
+        // Convert the parsed date-time to Sinhala
+        val sinhalaSymbols = DateFormatSymbols.getInstance(Locale("si", "LK"))
+        val outputFormat = SimpleDateFormat("dd MMMM yyyy hh:mm a", sinhalaSymbols)
+        return outputFormat.format(dateTime)
+    }
+
+
+    private fun formatReloadSms(messageID: String): Array<Any> {
 
         if (messageID.startsWith("RELOADED")) {
 
@@ -123,7 +147,10 @@ class MainActivity : AppCompatActivity() {
             val newBalance =
                 Pattern.compile(balanceRegex).matcher(messageID).apply { find() }.group(1)
 
-            return "$phoneNumber යන අංකයට\nරු. $amount/= ක්\n$date දිනයේදී රීලෝඩ් කරන ලදි.\nඉතිරි මුදල රු. $newBalance/=\nReference number: $referenceNumber, "
+            return arrayOf(
+                "$phoneNumber අංකයට\nරු. $amount/= ක්\n$date දිනයේදී රීලෝඩ් කරන ලදි.\nඉතිරි මුදල රු. $newBalance/=\nයොමු අංකය: $referenceNumber, ",
+                1
+            )
 
         } else if (messageID.startsWith("RELOAD NOT SUCCESSFUL TO")) {
 
@@ -132,16 +159,40 @@ class MainActivity : AppCompatActivity() {
             val phoneNumber =
                 Pattern.compile(phoneRegex).matcher(messageID).apply { find() }.group(1)
 
-            // Extract current balance
-            val balanceRegex = "YOUR CURRENT BALANCE IS RS (\\d+\\.\\d+)"
-//            val currentBalance = Pattern.compile(balanceRegex).matcher(messageID).apply { find() }.group(1)
-//            return "මුදල් මදි නිසා $phoneNumber යන අංකයට දැමූ රීලෝඩ් එක සාර්ථක නැත.\nඉතිරි මුදල රු. $currentBalance"
-            return "මුදල් මදි නිසා $phoneNumber යන අංකයට දැමූ රීලෝඩ් එක සාර්ථක නැත."
+            return arrayOf("මුදල් මදි නිසා $phoneNumber යන අංකයට දැමූ රීලෝඩ් එක සාර්ථක නැත.", 3)
 
         } else if (messageID.startsWith("YOU HAVE")) {
-            return "ඔබ යෙදූ PIN අංකය වැරදියි නැවත උත්සාහ කරන්න"
+            return arrayOf("ඔබ යෙදූ PIN අංකය වැරදියි නැවත උත්සාහ කරන්න", 3)
+
+        } else if (messageID.contains("has transferred")) {
+
+            val firstPhoneNumberRegex = "(\\d{9})"
+            val firstPhoneNumber =
+                Pattern.compile(firstPhoneNumberRegex).matcher(messageID).apply { find() }.group(1)
+
+            val transferDateRegex = "(\\d{2}/\\d{2}/\\d{4})"
+            val transferDate =
+                Pattern.compile(transferDateRegex).matcher(messageID).apply { find() }.group(1)
+
+            val transferredAmountRegex = "(\\d+\\.\\d{1,2})"
+            val transferredAmount =
+                Pattern.compile(transferredAmountRegex).matcher(messageID).apply { find() }.group(1)
+
+            val newBalanceRegex = "Your new balance is Rs (\\d+\\.\\d+)"
+            val newBalance =
+                Pattern.compile(newBalanceRegex).matcher(messageID).apply { find() }.group(1)
+
+            val referenceNumberRegex = "Reference no\\. (\\d+)"
+            val referenceNumber =
+                Pattern.compile(referenceNumberRegex).matcher(messageID).apply { find() }.group(1)
+
+            return arrayOf(
+                "0$firstPhoneNumber විසින් $transferDate දින ඔබේ ගිණුමට රු. $transferredAmount ක් රීලෝඩ් කර ඇත.\nඔබගේ නව ශේෂය රු. $newBalance කි.\nයොමු අංකය: $referenceNumber",
+                2
+            )
+
         } else {
-            return messageID
+            return arrayOf(messageID, 2)
         }
     }
 }
