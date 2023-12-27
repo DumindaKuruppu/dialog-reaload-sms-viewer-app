@@ -80,7 +80,8 @@ class MainActivity : AppCompatActivity() {
                             .equals(eZReloadTransfers))) && (cursor.getString(messageID)
                             .startsWith("RELOADED")) || (cursor.getString(messageID)
                             .startsWith("RELOAD")) || (cursor.getString(messageID)
-                            .startsWith("YOU HAVE")) || (cursor.getString(messageID)).contains("has transferred")
+                            .startsWith("YOU HAVE")) || (cursor.getString(messageID)
+                            .startsWith("YOU ARE NOT AUTHORIZED")) || (cursor.getString(messageID)).contains("has transferred")
                     ) {
                         println(cursor.getString(messageID))
                         smsList.add(
@@ -148,7 +149,7 @@ class MainActivity : AppCompatActivity() {
                 Pattern.compile(balanceRegex).matcher(messageID).apply { find() }.group(1)
 
             return arrayOf(
-                "$phoneNumber අංකයට\nරු. $amount/= ක්\n$date දිනයේදී රීලෝඩ් කරන ලදි.\nඉතිරි මුදල රු. $newBalance/=\nයොමු අංකය: $referenceNumber, ",
+                "$phoneNumber අංකයට\nරු. $amount/= ක්\n$date දිනයේදී රීලෝඩ් කරන ලදි.\nඉතිරි මුදල රු. $newBalance/=\nයොමු අංකය: $referenceNumber",
                 1
             )
 
@@ -160,6 +161,15 @@ class MainActivity : AppCompatActivity() {
                 Pattern.compile(phoneRegex).matcher(messageID).apply { find() }.group(1)
 
             return arrayOf("මුදල් මදි නිසා $phoneNumber යන අංකයට දැමූ රීලෝඩ් එක සාර්ථක නැත.", 3)
+
+        } else if (messageID.startsWith("YOU ARE NOT AUTHORIZED")) {
+
+            // Extract reference number
+            val refRegex = "REFERENCE NO: (\\d+)"
+            val referenceNumber =
+                Pattern.compile(refRegex).matcher(messageID).apply { find() }.group(1)
+
+            return arrayOf("ඔබට මෙම අංකයට රීලෝඩ් කිරීමේ හැකියාවක් නොමැත.\nයොමු අංකය: $referenceNumber", 3)
 
         } else if (messageID.startsWith("YOU HAVE")) {
             return arrayOf("ඔබ යෙදූ PIN අංකය වැරදියි නැවත උත්සාහ කරන්න", 3)
