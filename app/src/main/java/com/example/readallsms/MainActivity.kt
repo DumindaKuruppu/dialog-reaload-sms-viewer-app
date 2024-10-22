@@ -122,89 +122,100 @@ class MainActivity : AppCompatActivity() {
 
 
     private fun formatReloadSms(messageID: String): Array<Any> {
+        return try {
+            if (messageID.startsWith("RELOADED")) {
+                try {
+                    // Extract phone number
+                    val phoneRegex = "TO (\\d+)"
+                    val phoneNumber =
+                        Pattern.compile(phoneRegex).matcher(messageID).apply { find() }.group(1)
 
-        if (messageID.startsWith("RELOADED")) {
+                    // Extract date
+                    val dateRegex = "ON (\\w+ \\d+, \\d+)"
+                    val date = Pattern.compile(dateRegex).matcher(messageID).apply { find() }.group(1)
 
-            // Extract phone number
-            val phoneRegex = "TO (\\d+)"
-            val phoneNumber =
-                Pattern.compile(phoneRegex).matcher(messageID).apply { find() }.group(1)
+                    // Extract reference number
+                    val refRegex = "REFERENCE NO: (\\d+)"
+                    val referenceNumber =
+                        Pattern.compile(refRegex).matcher(messageID).apply { find() }.group(1)
 
-            // Extract date
-            val dateRegex = "ON (\\w+ \\d+, \\d+)"
-            val date = Pattern.compile(dateRegex).matcher(messageID).apply { find() }.group(1)
+                    // Extract amount
+                    val amountRegex = "RS (\\d+\\.\\d+)"
+                    val amount = Pattern.compile(amountRegex).matcher(messageID).apply { find() }.group(1)
 
-            // Extract reference number
-            val refRegex = "REFERENCE NO: (\\d+)"
-            val referenceNumber =
-                Pattern.compile(refRegex).matcher(messageID).apply { find() }.group(1)
+                    // Extract new balance
+                    val balanceRegex = "NEW BALANCE: RS (\\d+\\.\\d+)"
+                    val newBalance =
+                        Pattern.compile(balanceRegex).matcher(messageID).apply { find() }.group(1)
 
-            // Extract amount
-            val amountRegex = "RS (\\d+\\.\\d+)"
-            val amount = Pattern.compile(amountRegex).matcher(messageID).apply { find() }.group(1)
+                    return arrayOf(
+                        "$phoneNumber අංකයට\nරු. $amount/= ක්\n$date දිනයේදී රීලෝඩ් කරන ලදි.\nඉතිරි මුදල රු. $newBalance/=\nයොමු අංකය: $referenceNumber",
+                        1
+                    )
+                } catch (e: Exception) {
+                    arrayOf("An error occurred while processing RELOADED message: ${e.message}", 1)
+                }
+            } else if (messageID.startsWith("RELOAD NOT SUCCESSFUL TO")) {
+                try {
+                    // Extract phone number
+                    val phoneRegex = "TO (\\d+)"
+                    val phoneNumber =
+                        Pattern.compile(phoneRegex).matcher(messageID).apply { find() }.group(1)
 
-            // Extract new balance
-            val balanceRegex = "NEW BALANCE: RS (\\d+\\.\\d+)"
-            val newBalance =
-                Pattern.compile(balanceRegex).matcher(messageID).apply { find() }.group(1)
+                    return arrayOf("මුදල් මදි නිසා $phoneNumber යන අංකයට දැමූ රීලෝඩ් එක සාර්ථක නැත.", 3)
+                } catch (e: Exception) {
+                    arrayOf("An error occurred:\n${messageID}", 3)
+                }
+            } else if (messageID.startsWith("YOU ARE NOT AUTHORIZED")) {
+                try {
+                    // Extract reference number
+                    val refRegex = "REFERENCE NO: (\\d+)"
+                    val referenceNumber =
+                        Pattern.compile(refRegex).matcher(messageID).apply { find() }.group(1)
 
-            return arrayOf(
-                "$phoneNumber අංකයට\nරු. $amount/= ක්\n$date දිනයේදී රීලෝඩ් කරන ලදි.\nඉතිරි මුදල රු. $newBalance/=\nයොමු අංකය: $referenceNumber",
-                1
-            )
+                    return arrayOf("ඔබට මෙම අංකයට රීලෝඩ් කිරීමේ හැකියාවක් නොමැත.\nයොමු අංකය: $referenceNumber", 3)
+                } catch (e: Exception) {
+                    arrayOf("An error occurred:\n${messageID}", 3)
+                }
+            } else if (messageID.startsWith("YOU HAVE")) {
+                return arrayOf("ඔබ යෙදූ PIN අංකය වැරදියි නැවත උත්සාහ කරන්න", 3)
+            } else if (messageID.contains("has transferred")) {
+                try {
+                    val firstPhoneNumberRegex = "(\\d{9})"
+                    val firstPhoneNumber =
+                        Pattern.compile(firstPhoneNumberRegex).matcher(messageID).apply { find() }.group(1)
 
-        } else if (messageID.startsWith("RELOAD NOT SUCCESSFUL TO")) {
+                    val transferDateRegex = "(\\d{2}/\\d{2}/\\d{4})"
+                    val transferDate =
+                        Pattern.compile(transferDateRegex).matcher(messageID).apply { find() }.group(1)
 
-            // Extract phone number
-            val phoneRegex = "TO (\\d+)"
-            val phoneNumber =
-                Pattern.compile(phoneRegex).matcher(messageID).apply { find() }.group(1)
+                    val transferredAmountRegex = "(\\d+\\.\\d{1,2})"
+                    val transferredAmount =
+                        Pattern.compile(transferredAmountRegex).matcher(messageID).apply { find() }.group(1)
 
-            return arrayOf("මුදල් මදි නිසා $phoneNumber යන අංකයට දැමූ රීලෝඩ් එක සාර්ථක නැත.", 3)
+                    val newBalanceRegex = "Your new balance is Rs (\\d+\\.\\d+)"
+                    val newBalance =
+                        Pattern.compile(newBalanceRegex).matcher(messageID).apply { find() }.group(1)
 
-        } else if (messageID.startsWith("YOU ARE NOT AUTHORIZED")) {
+                    val referenceNumberRegex = "Reference no\\. (\\d+)"
+                    val referenceNumber =
+                        Pattern.compile(referenceNumberRegex).matcher(messageID).apply { find() }.group(1)
 
-            // Extract reference number
-            val refRegex = "REFERENCE NO: (\\d+)"
-            val referenceNumber =
-                Pattern.compile(refRegex).matcher(messageID).apply { find() }.group(1)
-
-            return arrayOf("ඔබට මෙම අංකයට රීලෝඩ් කිරීමේ හැකියාවක් නොමැත.\nයොමු අංකය: $referenceNumber", 3)
-
-        } else if (messageID.startsWith("YOU HAVE")) {
-            return arrayOf("ඔබ යෙදූ PIN අංකය වැරදියි නැවත උත්සාහ කරන්න", 3)
-
-        } else if (messageID.contains("has transferred")) {
-
-            val firstPhoneNumberRegex = "(\\d{9})"
-            val firstPhoneNumber =
-                Pattern.compile(firstPhoneNumberRegex).matcher(messageID).apply { find() }.group(1)
-
-            val transferDateRegex = "(\\d{2}/\\d{2}/\\d{4})"
-            val transferDate =
-                Pattern.compile(transferDateRegex).matcher(messageID).apply { find() }.group(1)
-
-            val transferredAmountRegex = "(\\d+\\.\\d{1,2})"
-            val transferredAmount =
-                Pattern.compile(transferredAmountRegex).matcher(messageID).apply { find() }.group(1)
-
-            val newBalanceRegex = "Your new balance is Rs (\\d+\\.\\d+)"
-            val newBalance =
-                Pattern.compile(newBalanceRegex).matcher(messageID).apply { find() }.group(1)
-
-            val referenceNumberRegex = "Reference no\\. (\\d+)"
-            val referenceNumber =
-                Pattern.compile(referenceNumberRegex).matcher(messageID).apply { find() }.group(1)
-
-            return arrayOf(
-                "0$firstPhoneNumber විසින් $transferDate දින ඔබේ ගිණුමට රු. $transferredAmount ක් රීලෝඩ් කර ඇත.\nඔබගේ නව ශේෂය රු. $newBalance කි.\nයොමු අංකය: $referenceNumber",
-                2
-            )
-
-        } else {
-            return arrayOf(messageID, 2)
+                    return arrayOf(
+                        "0$firstPhoneNumber විසින් $transferDate දින ඔබේ ගිණුමට රු. $transferredAmount ක් රීලෝඩ් කර ඇත.\nඔබගේ නව ශේෂය රු. $newBalance කි.\nයොමු අංකය: $referenceNumber",
+                        2
+                    )
+                } catch (e: Exception) {
+                    arrayOf("An error occurred:\n${messageID}", 3)
+                }
+            } else {
+                return arrayOf(messageID, 2)
+            }
+        } catch (e: Exception) {
+            arrayOf("An error occurred:\n${messageID}", 3)
         }
     }
+
 }
 
 //RELOAD NOT SUCCESSFUL. PLEASE CONTACT YOUR RETAILER FOR ASSISTANCE. REFERENCE NO: 10762617237
